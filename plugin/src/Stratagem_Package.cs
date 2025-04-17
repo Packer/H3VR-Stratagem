@@ -10,7 +10,7 @@ namespace Stratagem
 
         [Tooltip("Name of the stratagem")]
         public string title;
-        [Tooltip("Short description of what this stratagem does")]
+        [Tooltip("Short description of what this stratagem does"), Multiline(2)]
         public string description;
         public Sprite icon;
         [Tooltip("The input combination to spawn this stratagem \nU - Up\nD - Down\nL - Left\nR - Right")]
@@ -37,6 +37,8 @@ namespace Stratagem
         public GameObject[] spawnPrefabs;
         [Tooltip("All Object IDs that will spawn when the deploy type has triggered")]
         public string[] spawnObjectIDs;
+        [Tooltip("All spawn Object IDs will attempt to fit into any free slots on this backpack")]
+        public string spawnBackpackID;
         [Tooltip("All Sosigs that will spawn when the deploy type has triggered")]
         public int[] spawnSosigEnemyIDs;
 
@@ -56,6 +58,8 @@ namespace Stratagem
         {
             Yellow = 0,
             Red = 1,
+            Blue = 2,
+            Green = 3,
         }
     }
 }

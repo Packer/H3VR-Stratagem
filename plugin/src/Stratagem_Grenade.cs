@@ -108,6 +108,16 @@ namespace Stratagem
                 //Update with valid data
                 package.spawnObjectIDs = spawnIDs.ToArray();
 
+                string backPackID = "";
+                if (package.spawnBackpackID != null)
+                {
+                    if (IM.OD.ContainsKey(package.spawnBackpackID))
+                        backPackID = package.spawnBackpackID;
+                }
+
+                package.spawnBackpackID = backPackID;
+
+
                 List<int> sosigIDs = new List<int>();
                 if (package.spawnSosigEnemyIDs != null)
                 {
@@ -343,9 +353,26 @@ namespace Stratagem
 
         void SpawnObjectIDs()
         {
+            FVRObject backpack = null;
+            PlayerBackPack spawnedBackpack = null;
+
+            if (selected.spawnBackpackID != null 
+                && selected.spawnBackpackID != "" 
+                && IM.OD.TryGetValue(selected.spawnBackpackID, out backpack))
+            {
+                if (backpack != null && backpack.GetGameObject() != null)
+                {
+                    spawnedBackpack = Instantiate(
+                        backpack.GetGameObject(),
+                        hellpodSpawnPoints[0].position,
+                        hellpodSpawnPoints[0].rotation).GetComponent<PlayerBackPack>();
+                }
+            }
+
+
             //Enable special drop pod attachment here
 
-            FVRObject mainObject;
+            FVRObject mainObject = null;
             int spawnIndex = 0;
 
             for (int i = 0; i < selected.spawnObjectIDs.Length; i++)
@@ -364,8 +391,22 @@ namespace Stratagem
                         mainObject.GetGameObject(),
                         hellpodSpawnPoints[spawnIndex].position + ((Vector3.up * 0.25f) * i),
                         hellpodSpawnPoints[spawnIndex].rotation);
-                //TODO INSTANTIATE OBJECTS HERE IN ORDER OF TRANFORMS THEN LOOP AFTER INDEX 0
 
+                FVRPhysicalObject phyObj = spawnedMain.GetComponent<FVRPhysicalObject>();
+                if (spawnedBackpack != null && phyObj != null)
+                {
+                    for (int y = 0; y < spawnedBackpack.Slots.Length; y++)
+                    {
+                        if (spawnedBackpack.Slots[y].HeldObject != null)
+                            continue;
+
+                        if (phyObj.Size <= spawnedBackpack.Slots[y].SizeLimit)
+                        {
+                            phyObj.SetQuickBeltSlot(spawnedBackpack.Slots[y]);
+                            break;
+                        }
+                    }
+                }
 
                 if (spawnIndex + 1 < hellpodSpawnPoints.Length)
                     spawnIndex++;
@@ -485,6 +526,7 @@ namespace Stratagem
             {
                 callingIn = true;
                 callTitle.color = textColors[(int)selected.textColor];
+                callTitle.text = selected.title;
                 callArrow.color = textColors[(int)selected.textColor];
                 callThumbnail.sprite = selected.icon;
 

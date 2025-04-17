@@ -9,12 +9,13 @@ using UnityEngine.SceneManagement;
 namespace Stratagem
 {
     // TODO: Change 'YourPlugin' to the name of your plugin
-    [BepInPlugin("Packer.StratagemPlugin", "StratagemPlugin", "1.0.0")]
+    [BepInPlugin("Packer.StratagemPlugin", "StratagemPlugin", "1.0.1")]
     [BepInProcess("h3vr.exe")]
     public partial class StratagemPlugin : BaseUnityPlugin
     {
         public static StratagemPlugin instance;
         public static List<Sosig> sosigs = new List<Sosig>();
+        private static bool sosigClearUpdate = false;
 
         private void Awake()
         {
@@ -29,12 +30,14 @@ namespace Stratagem
         private void Start()
         {
             StartCoroutine(ModLoader.LoadModPackages());
-            SceneManager.activeSceneChanged += ReregisterSosigKillEvent;
+            instance.StartCoroutine(SosigUpdate());
+            //SceneManager.activeSceneChanged += ReregisterSosigKillEvent;
         }
 
         private void OnDestroy()
         {
-            GM.CurrentSceneSettings.SosigKillEvent -= RemoveSosig;
+            //GM.CurrentSceneSettings.SosigKillEvent -= RemoveSosig;
+            sosigs = null;
         }
 
         private void ReregisterSosigKillEvent(Scene current, Scene next)
@@ -42,13 +45,29 @@ namespace Stratagem
             if (GM.CurrentSceneSettings == null)
                 return;
 
-            GM.CurrentSceneSettings.SosigKillEvent -= RemoveSosig;
-            GM.CurrentSceneSettings.SosigKillEvent += RemoveSosig;
+            //GM.CurrentSceneSettings.SosigKillEvent -= RemoveSosig;
+            //GM.CurrentSceneSettings.SosigKillEvent += RemoveSosig;
         }
 
         // The line below allows access to your plugin's logger from anywhere in your code, including outside of this file.
         // Use it with 'YourPlugin.Logger.LogInfo(message)' (or any of the other Log* methods)
         internal new static ManualLogSource Logger { get; private set; }
+
+        //Manuelly check for added sosigs to remove
+        protected static IEnumerator SosigUpdate()
+        {
+            yield return new WaitForSeconds(Random.Range(4f, 6f));
+
+            if (sosigs != null)
+            {
+                for (int i = sosigs.Count - 1; i >= 0; i--)
+                {
+                    ClearSosig(sosigs[i]);
+                }
+                instance.StartCoroutine(SosigUpdate());
+                yield break;
+            }
+        }
 
         public static void AddSosig(Sosig s)
         {
@@ -61,20 +80,13 @@ namespace Stratagem
             sosigs.Add(s);
         }
 
-        public static void RemoveSosig(Sosig s)
+        public static void ClearSosig(Sosig s)
         {
-            if (sosigs.Contains(s))
+            if (sosigs.Contains(s) && s.BodyState == Sosig.SosigBodyState.Dead)
             {
-                instance.StartCoroutine(DelayKillSosig(s));
+                s.ClearSosig();
                 sosigs.Remove(s);
             }
-        }
-
-        protected static IEnumerator DelayKillSosig(Sosig s)
-        {
-            yield return new WaitForSeconds(5);
-
-            s.ClearSosig();
         }
 
         public static void DestroyObject(float time, GameObject gameObj)
